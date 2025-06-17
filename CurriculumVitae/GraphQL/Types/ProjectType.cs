@@ -13,9 +13,6 @@ public class ProjectType : ObjectGraphType<Project>
         Field(p => p.Id, type: typeof(NonNullGraphType<IntGraphType>))
             .Description("The unique identifier for the project");
             
-        Field(p => p.PersonId, type: typeof(NonNullGraphType<IntGraphType>))
-            .Description("The ID of the person this project belongs to");
-            
         Field(p => p.Name, type: typeof(NonNullGraphType<StringGraphType>))
             .Description("The name of the project");
             

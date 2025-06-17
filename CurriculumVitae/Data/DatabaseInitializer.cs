@@ -23,57 +23,31 @@ public class DatabaseInitializer
 
     private async Task CreateTablesIfNotExistAsync(SqliteConnection connection)
     {
-        var createPersonTable = @"
-            CREATE TABLE IF NOT EXISTS Person (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                FullName TEXT NOT NULL,
-                Email TEXT NOT NULL,
-                Phone TEXT,
-                Summary TEXT
-            )";
-
-        var createWorkExperienceTable = @"
-            CREATE TABLE IF NOT EXISTS WorkExperience (
-                Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                PersonId INTEGER NOT NULL,
-                Company TEXT NOT NULL,
-                Position TEXT NOT NULL,
-                StartDate TEXT NOT NULL,
-                EndDate TEXT,
-                Description TEXT,
-                FOREIGN KEY (PersonId) REFERENCES Person(Id)
-            )";
-
         var createEducationTable = @"
             CREATE TABLE IF NOT EXISTS Education (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                PersonId INTEGER NOT NULL,
                 Institution TEXT NOT NULL,
                 Degree TEXT NOT NULL,
                 FieldOfStudy TEXT,
                 StartDate TEXT NOT NULL,
                 EndDate TEXT,
                 Grade TEXT,
-                Description TEXT,
-                FOREIGN KEY (PersonId) REFERENCES Person(Id)
+                Description TEXT
             )";
 
         var createSkillTable = @"
             CREATE TABLE IF NOT EXISTS Skill (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                PersonId INTEGER NOT NULL,
                 Name TEXT NOT NULL,
                 ProficiencyLevel INTEGER NOT NULL,
                 Category INTEGER NOT NULL,
                 YearsOfExperience INTEGER,
-                Description TEXT,
-                FOREIGN KEY (PersonId) REFERENCES Person(Id)
+                Description TEXT
             )";
 
         var createProjectTable = @"
             CREATE TABLE IF NOT EXISTS Project (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                PersonId INTEGER NOT NULL,
                 Name TEXT NOT NULL,
                 Description TEXT NOT NULL,
                 Technologies TEXT,
@@ -81,8 +55,7 @@ public class DatabaseInitializer
                 EndDate TEXT,
                 ProjectUrl TEXT,
                 SourceCodeUrl TEXT,
-                IsFeatured INTEGER NOT NULL DEFAULT 0,
-                FOREIGN KEY (PersonId) REFERENCES Person(Id)
+                IsFeatured INTEGER NOT NULL DEFAULT 0
             )";
 
         var createCompanyTable = @"
@@ -101,12 +74,6 @@ public class DatabaseInitializer
         // Execute table creation commands
         using var command = connection.CreateCommand();
         
-        command.CommandText = createPersonTable;
-        await command.ExecuteNonQueryAsync();
-        
-        command.CommandText = createWorkExperienceTable;
-        await command.ExecuteNonQueryAsync();
-        
         command.CommandText = createEducationTable;
         await command.ExecuteNonQueryAsync();
         
@@ -122,38 +89,37 @@ public class DatabaseInitializer
 
     private async Task SeedDataIfEmptyAsync(SqliteConnection connection)
     {
-        using var checkCommand = connection.CreateCommand();
-        checkCommand.CommandText = "SELECT COUNT(*) FROM Person";
-        var personCount = Convert.ToInt32(await checkCommand.ExecuteScalarAsync());
+        // Check and seed education
+        using var educationCheckCommand = connection.CreateCommand();
+        educationCheckCommand.CommandText = "SELECT COUNT(*) FROM Education";
+        var educationCount = Convert.ToInt32(await educationCheckCommand.ExecuteScalarAsync());
 
-        if (personCount == 0)
+        if (educationCount == 0)
         {
-            using var personCommand = connection.CreateCommand();
-            personCommand.CommandText = @"
-                INSERT INTO Person (FullName, Email, Phone, Summary) 
-                VALUES (@FullName, @Email, @Phone, @Summary)";
-            
-            personCommand.Parameters.AddWithValue("@FullName", "John Doe");
-            personCommand.Parameters.AddWithValue("@Email", "john.doe@example.com");
-            personCommand.Parameters.AddWithValue("@Phone", "+1-555-123-4567");
-            personCommand.Parameters.AddWithValue("@Summary", "Experienced software developer with expertise in .NET and modern web technologies.");
-            
-            await personCommand.ExecuteNonQueryAsync();
-
-            using var getIdCommand = connection.CreateCommand();
-            getIdCommand.CommandText = "SELECT last_insert_rowid()";
-            var personId = Convert.ToInt32(await getIdCommand.ExecuteScalarAsync());
-
-            await SeedWorkExperiencesAsync(connection, personId);
-            
-            await SeedEducationAsync(connection, personId);
-            
-            await SeedSkillsAsync(connection, personId);
-            
-            await SeedProjectsAsync(connection, personId);
+            await SeedEducationAsync(connection);
         }
 
-        // Always check and seed companies independently
+        // Check and seed skills
+        using var skillCheckCommand = connection.CreateCommand();
+        skillCheckCommand.CommandText = "SELECT COUNT(*) FROM Skill";
+        var skillCount = Convert.ToInt32(await skillCheckCommand.ExecuteScalarAsync());
+
+        if (skillCount == 0)
+        {
+            await SeedSkillsAsync(connection);
+        }
+
+        // Check and seed projects
+        using var projectCheckCommand = connection.CreateCommand();
+        projectCheckCommand.CommandText = "SELECT COUNT(*) FROM Project";
+        var projectCount = Convert.ToInt32(await projectCheckCommand.ExecuteScalarAsync());
+
+        if (projectCount == 0)
+        {
+            await SeedProjectsAsync(connection);
+        }
+
+        // Check and seed companies
         using var companyCheckCommand = connection.CreateCommand();
         companyCheckCommand.CommandText = "SELECT COUNT(*) FROM Company";
         var companyCount = Convert.ToInt32(await companyCheckCommand.ExecuteScalarAsync());
@@ -164,51 +130,22 @@ public class DatabaseInitializer
         }
     }
 
-    private async Task SeedWorkExperiencesAsync(SqliteConnection connection, int personId)
-    {
-        var workExperiences = new[]
-        {
-            new { Company = "TechCorp Solutions", Position = "Senior Software Engineer", StartDate = new DateTime(2021, 3, 1), EndDate = (DateTime?)null, Description = "Lead development of microservices architecture using .NET and Azure." },
-            new { Company = "Digital Innovations Inc", Position = "Full Stack Developer", StartDate = new DateTime(2019, 1, 15), EndDate = (DateTime?)new DateTime(2021, 2, 28), Description = "Developed web applications using React and ASP.NET Core." }
-        };
-
-        foreach (var we in workExperiences)
-        {
-            using var command = connection.CreateCommand();
-            command.CommandText = @"
-                INSERT INTO WorkExperience (PersonId, Company, Position, StartDate, EndDate, Description) 
-                VALUES (@PersonId, @Company, @Position, @StartDate, @EndDate, @Description)";
-            
-            command.Parameters.AddWithValue("@PersonId", personId);
-            command.Parameters.AddWithValue("@Company", we.Company);
-            command.Parameters.AddWithValue("@Position", we.Position);
-            command.Parameters.AddWithValue("@StartDate", we.StartDate);
-            if (we.EndDate.HasValue)
-                command.Parameters.AddWithValue("@EndDate", we.EndDate.Value);
-            else
-                command.Parameters.AddWithValue("@EndDate", DBNull.Value);
-            command.Parameters.AddWithValue("@Description", we.Description);
-            
-            await command.ExecuteNonQueryAsync();
-        }
-    }
-
-    private async Task SeedEducationAsync(SqliteConnection connection, int personId)
+    private async Task SeedEducationAsync(SqliteConnection connection)
     {
         var educations = new[]
         {
             new { Institution = "University of Technology", Degree = "Bachelor of Science", FieldOfStudy = "Computer Science", StartDate = new DateTime(2012, 9, 1), EndDate = new DateTime(2016, 5, 15), Grade = "3.8 GPA", Description = "Graduated Magna Cum Laude. Relevant coursework: Data Structures, Algorithms, Software Engineering, Database Systems." },
-            new { Institution = "Microsoft Learn", Degree = "Azure Developer Associate", FieldOfStudy = "Cloud Computing", StartDate = new DateTime(2020, 1, 1), EndDate = new DateTime(2020, 3, 15), Grade = "Certified", Description = "Earned AZ-204 certification demonstrating expertise in developing cloud solutions on Microsoft Azure platform." }
+            new { Institution = "Microsoft Learn", Degree = "Azure Developer Associate", FieldOfStudy = "Cloud Computing", StartDate = new DateTime(2020, 1, 1), EndDate = new DateTime(2020, 3, 15), Grade = "Certified", Description = "Earned AZ-204 certification demonstrating expertise in developing cloud solutions on Microsoft Azure platform." },
+            new { Institution = "Stanford University", Degree = "Master of Science", FieldOfStudy = "Software Engineering", StartDate = new DateTime(2016, 9, 1), EndDate = new DateTime(2018, 6, 15), Grade = "3.9 GPA", Description = "Advanced coursework in distributed systems, machine learning, and software architecture." }
         };
 
         foreach (var edu in educations)
         {
             using var command = connection.CreateCommand();
             command.CommandText = @"
-                INSERT INTO Education (PersonId, Institution, Degree, FieldOfStudy, StartDate, EndDate, Grade, Description) 
-                VALUES (@PersonId, @Institution, @Degree, @FieldOfStudy, @StartDate, @EndDate, @Grade, @Description)";
+                INSERT INTO Education (Institution, Degree, FieldOfStudy, StartDate, EndDate, Grade, Description) 
+                VALUES (@Institution, @Degree, @FieldOfStudy, @StartDate, @EndDate, @Grade, @Description)";
             
-            command.Parameters.AddWithValue("@PersonId", personId);
             command.Parameters.AddWithValue("@Institution", edu.Institution);
             command.Parameters.AddWithValue("@Degree", edu.Degree);
             command.Parameters.AddWithValue("@FieldOfStudy", edu.FieldOfStudy);
@@ -221,7 +158,7 @@ public class DatabaseInitializer
         }
     }
 
-    private async Task SeedSkillsAsync(SqliteConnection connection, int personId)
+    private async Task SeedSkillsAsync(SqliteConnection connection)
     {
         var skills = new[]
         {
@@ -234,17 +171,18 @@ public class DatabaseInitializer
             new { Name = "GraphQL", ProficiencyLevel = 6, Category = (int)SkillCategory.Technical, YearsOfExperience = 2, Description = "API design and implementation with GraphQL" },
             new { Name = "Team Leadership", ProficiencyLevel = 8, Category = (int)SkillCategory.Soft, YearsOfExperience = 5, Description = "Leading development teams and mentoring junior developers" },
             new { Name = "Project Management", ProficiencyLevel = 7, Category = (int)SkillCategory.Soft, YearsOfExperience = 4, Description = "Agile methodologies and project coordination" },
-            new { Name = "English", ProficiencyLevel = 10, Category = (int)SkillCategory.Language, YearsOfExperience = 25, Description = "Native speaker" }
+            new { Name = "English", ProficiencyLevel = 10, Category = (int)SkillCategory.Language, YearsOfExperience = 25, Description = "Native speaker" },
+            new { Name = "Python", ProficiencyLevel = 7, Category = (int)SkillCategory.Technical, YearsOfExperience = 3, Description = "Data analysis and machine learning with Python" },
+            new { Name = "TypeScript", ProficiencyLevel = 8, Category = (int)SkillCategory.Technical, YearsOfExperience = 4, Description = "Type-safe JavaScript development" }
         };
 
         foreach (var skill in skills)
         {
             using var command = connection.CreateCommand();
             command.CommandText = @"
-                INSERT INTO Skill (PersonId, Name, ProficiencyLevel, Category, YearsOfExperience, Description) 
-                VALUES (@PersonId, @Name, @ProficiencyLevel, @Category, @YearsOfExperience, @Description)";
+                INSERT INTO Skill (Name, ProficiencyLevel, Category, YearsOfExperience, Description) 
+                VALUES (@Name, @ProficiencyLevel, @Category, @YearsOfExperience, @Description)";
             
-            command.Parameters.AddWithValue("@PersonId", personId);
             command.Parameters.AddWithValue("@Name", skill.Name);
             command.Parameters.AddWithValue("@ProficiencyLevel", skill.ProficiencyLevel);
             command.Parameters.AddWithValue("@Category", skill.Category);
@@ -255,23 +193,23 @@ public class DatabaseInitializer
         }
     }
 
-    private async Task SeedProjectsAsync(SqliteConnection connection, int personId)
+    private async Task SeedProjectsAsync(SqliteConnection connection)
     {
         var projects = new[]
         {
             new { Name = "E-Commerce Platform", Description = "Full-stack e-commerce solution with microservices architecture, supporting 10,000+ concurrent users. Implemented using .NET 6, React, Redis, and PostgreSQL.", Technologies = "ASP.NET Core, React, TypeScript, Redis, PostgreSQL, Docker, Azure", StartDate = new DateTime(2022, 1, 1), EndDate = (DateTime?)new DateTime(2022, 8, 15), ProjectUrl = (string?)"https://demo-ecommerce.example.com", SourceCodeUrl = "https://github.com/johndoe/ecommerce-platform", IsFeatured = 1 },
             new { Name = "Task Management API", Description = "RESTful API for task management with real-time notifications, authentication, and comprehensive testing. Built with clean architecture principles.", Technologies = "ASP.NET Core, SignalR, JWT, xUnit, Swagger", StartDate = new DateTime(2021, 9, 1), EndDate = (DateTime?)new DateTime(2021, 11, 30), ProjectUrl = (string?)null, SourceCodeUrl = "https://github.com/johndoe/task-management-api", IsFeatured = 1 },
-            new { Name = "Weather Dashboard", Description = "Interactive weather dashboard with real-time data visualization and location-based forecasts. Responsive design for mobile and desktop.", Technologies = "React, TypeScript, Chart.js, OpenWeather API, Tailwind CSS", StartDate = new DateTime(2021, 6, 1), EndDate = (DateTime?)new DateTime(2021, 7, 15), ProjectUrl = (string?)"https://weather-dashboard.example.com", SourceCodeUrl = "https://github.com/johndoe/weather-dashboard", IsFeatured = 0 }
+            new { Name = "Weather Dashboard", Description = "Interactive weather dashboard with real-time data visualization and location-based forecasts. Responsive design for mobile and desktop.", Technologies = "React, TypeScript, Chart.js, OpenWeather API, Tailwind CSS", StartDate = new DateTime(2021, 6, 1), EndDate = (DateTime?)new DateTime(2021, 7, 15), ProjectUrl = (string?)"https://weather-dashboard.example.com", SourceCodeUrl = "https://github.com/johndoe/weather-dashboard", IsFeatured = 0 },
+            new { Name = "CurriculumVitae API", Description = "GraphQL API for managing CV data including education, skills, projects, and companies. Built with ASP.NET Core and GraphQL.", Technologies = "ASP.NET Core, GraphQL, SQLite, Entity Framework", StartDate = new DateTime(2023, 1, 1), EndDate = (DateTime?)null, ProjectUrl = (string?)null, SourceCodeUrl = "https://github.com/example/cv-api", IsFeatured = 1 }
         };
 
         foreach (var project in projects)
         {
             using var command = connection.CreateCommand();
             command.CommandText = @"
-                INSERT INTO Project (PersonId, Name, Description, Technologies, StartDate, EndDate, ProjectUrl, SourceCodeUrl, IsFeatured) 
-                VALUES (@PersonId, @Name, @Description, @Technologies, @StartDate, @EndDate, @ProjectUrl, @SourceCodeUrl, @IsFeatured)";
+                INSERT INTO Project (Name, Description, Technologies, StartDate, EndDate, ProjectUrl, SourceCodeUrl, IsFeatured) 
+                VALUES (@Name, @Description, @Technologies, @StartDate, @EndDate, @ProjectUrl, @SourceCodeUrl, @IsFeatured)";
             
-            command.Parameters.AddWithValue("@PersonId", personId);
             command.Parameters.AddWithValue("@Name", project.Name);
             command.Parameters.AddWithValue("@Description", project.Description);
             command.Parameters.AddWithValue("@Technologies", project.Technologies);
@@ -303,7 +241,8 @@ public class DatabaseInitializer
             new { Name = "TechCorp Solutions", Description = "Leading technology solutions provider specializing in enterprise software development and cloud infrastructure.", Industry = "Technology", Location = "San Francisco, CA", Website = "https://techcorp-solutions.com", EmployeeCount = 2500, FoundedDate = new DateTime(2010, 3, 15), Notes = "Publicly traded company (NASDAQ: TCHS). Known for innovative microservices architecture solutions." },
             new { Name = "Digital Innovations Inc", Description = "Digital transformation consultancy helping businesses modernize their technology stack and processes.", Industry = "Consulting", Location = "New York, NY", Website = "https://digitalinnovations.com", EmployeeCount = 850, FoundedDate = new DateTime(2015, 7, 22), Notes = "Privately held. Specializes in React and .NET development. Acquired by Global Tech Partners in 2023." },
             new { Name = "Microsoft Corporation", Description = "Multinational technology corporation producing computer software, consumer electronics, and personal computers.", Industry = "Technology", Location = "Redmond, WA", Website = "https://microsoft.com", EmployeeCount = 221000, FoundedDate = new DateTime(1975, 4, 4), Notes = "Fortune 500 company. Major cloud computing provider with Azure platform." },
-            new { Name = "Startup Ventures LLC", Description = "Early-stage technology startup focused on AI-powered business automation tools.", Industry = "Technology", Location = "Austin, TX", Website = "https://startupventures.io", EmployeeCount = 45, FoundedDate = new DateTime(2020, 11, 8), Notes = "Series A funding completed in 2022. Rapid growth in the automation sector." }
+            new { Name = "Startup Ventures LLC", Description = "Early-stage technology startup focused on AI-powered business automation tools.", Industry = "Technology", Location = "Austin, TX", Website = "https://startupventures.io", EmployeeCount = 45, FoundedDate = new DateTime(2020, 11, 8), Notes = "Series A funding completed in 2022. Rapid growth in the automation sector." },
+            new { Name = "OpenAI", Description = "AI research and deployment company focused on ensuring artificial general intelligence benefits all of humanity.", Industry = "Artificial Intelligence", Location = "San Francisco, CA", Website = "https://openai.com", EmployeeCount = 500, FoundedDate = new DateTime(2015, 12, 11), Notes = "Creator of ChatGPT and GPT models. Leading research in artificial intelligence." }
         };
 
         foreach (var company in companies)

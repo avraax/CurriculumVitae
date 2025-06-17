@@ -13,9 +13,6 @@ public class EducationType : ObjectGraphType<Education>
         Field(e => e.Id, type: typeof(NonNullGraphType<IntGraphType>))
             .Description("The unique identifier for the education record");
             
-        Field(e => e.PersonId, type: typeof(NonNullGraphType<IntGraphType>))
-            .Description("The ID of the person this education belongs to");
-            
         Field(e => e.Institution, type: typeof(NonNullGraphType<StringGraphType>))
             .Description("The name of the educational institution");
             

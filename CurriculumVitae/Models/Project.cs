@@ -1,14 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CurriculumVitae.Models;
 
 public class Project
 {
     public int Id { get; set; }
-
-    [Required]
-    public int PersonId { get; set; }
 
     [Required]
     [MaxLength(200)]
@@ -35,9 +31,6 @@ public class Project
     public string? SourceCodeUrl { get; set; }
 
     public bool IsFeatured { get; set; }
-
-    [ForeignKey(nameof(PersonId))]
-    public Person? Person { get; set; }
 
     public bool IsOngoing => EndDate == null;
 

@@ -58,12 +58,11 @@ public class SkillRepository : ISkillRepository
         return new Skill
         {
             Id = reader.GetInt32(0),
-            PersonId = reader.GetInt32(1),
-            Name = reader.GetString(2),
-            ProficiencyLevel = reader.GetInt32(3),
-            Category = (SkillCategory)reader.GetInt32(4),
-            YearsOfExperience = reader.IsDBNull(5) ? null : reader.GetInt32(5),
-            Description = reader.IsDBNull(6) ? null : reader.GetString(6)
+            Name = reader.GetString(1),
+            ProficiencyLevel = reader.GetInt32(2),
+            Category = (SkillCategory)reader.GetInt32(3),
+            YearsOfExperience = reader.IsDBNull(4) ? null : reader.GetInt32(4),
+            Description = reader.IsDBNull(5) ? null : reader.GetString(5)
         };
     }
 } 

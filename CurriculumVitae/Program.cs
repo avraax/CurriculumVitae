@@ -13,10 +13,6 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Data Source=CurriculumVitae.db";
 
-builder.Services.AddScoped<IPersonRepository>(provider => 
-    new PersonRepository(connectionString));
-builder.Services.AddScoped<IWorkExperienceRepository>(provider => 
-    new WorkExperienceRepository(connectionString));
 builder.Services.AddScoped<IEducationRepository>(provider => 
     new EducationRepository(connectionString));
 builder.Services.AddScoped<ISkillRepository>(provider => 
@@ -28,8 +24,6 @@ builder.Services.AddScoped<ICompanyRepository>(provider =>
 
 builder.Services.AddSingleton(new DatabaseInitializer(connectionString));
 
-builder.Services.AddSingleton<PersonType>();
-builder.Services.AddSingleton<WorkExperienceType>();
 builder.Services.AddSingleton<EducationType>();
 builder.Services.AddSingleton<SkillType>();
 builder.Services.AddSingleton<SkillCategoryEnumType>();

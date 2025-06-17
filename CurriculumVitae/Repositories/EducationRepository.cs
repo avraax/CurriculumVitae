@@ -67,14 +67,13 @@ public class EducationRepository : IEducationRepository
         return new Education
         {
             Id = reader.GetInt32(0),
-            PersonId = reader.GetInt32(1),
-            Institution = reader.GetString(2),
-            Degree = reader.GetString(3),
-            FieldOfStudy = reader.IsDBNull(4) ? null : reader.GetString(4),
-            StartDate = DateTime.Parse(reader.GetString(5)),
-            EndDate = reader.IsDBNull(6) ? null : DateTime.Parse(reader.GetString(6)),
-            Grade = reader.IsDBNull(7) ? null : reader.GetString(7),
-            Description = reader.IsDBNull(8) ? null : reader.GetString(8)
+            Institution = reader.GetString(1),
+            Degree = reader.GetString(2),
+            FieldOfStudy = reader.IsDBNull(3) ? null : reader.GetString(3),
+            StartDate = DateTime.Parse(reader.GetString(4)),
+            EndDate = reader.IsDBNull(5) ? null : DateTime.Parse(reader.GetString(5)),
+            Grade = reader.IsDBNull(6) ? null : reader.GetString(6),
+            Description = reader.IsDBNull(7) ? null : reader.GetString(7)
         };
     }
 } 

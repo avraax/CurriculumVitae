@@ -12,45 +12,6 @@ public class QueryType : ObjectGraphType
         Name = "Query";
         Description = "Root query for CV operations";
 
-        Field<PersonType>("person")
-            .Description("Gets the person's complete CV profile")
-            .ResolveAsync(async context =>
-            {
-                var personRepository = context.RequestServices?.GetService<IPersonRepository>();
-                if (personRepository != null)
-                {
-                    return await personRepository.GetPersonAsync(context.CancellationToken);
-                }
-                return null;
-            });
-
-        Field<ListGraphType<WorkExperienceType>>("workExperiences")
-            .Description("Gets all work experiences")
-            .ResolveAsync(async context =>
-            {
-                var workExperienceRepository = context.RequestServices?.GetService<IWorkExperienceRepository>();
-                if (workExperienceRepository != null)
-                {
-                    var workExperiences = await workExperienceRepository.GetAllAsync(context.CancellationToken);
-                    return workExperiences.ToArray();
-                }
-                return new WorkExperience[0];
-            });
-
-        Field<WorkExperienceType>("workExperience")
-            .Description("Gets a specific work experience by ID")
-            .Argument<NonNullGraphType<IntGraphType>>("id", "The work experience ID")
-            .ResolveAsync(async context =>
-            {
-                var id = context.Arguments?.TryGetValue("id", out var idArg) == true && idArg.Value != null ? (int)idArg.Value : 0;
-                var workExperienceRepository = context.RequestServices?.GetService<IWorkExperienceRepository>();
-                if (workExperienceRepository != null)
-                {
-                    return await workExperienceRepository.GetByIdAsync(id, context.CancellationToken);
-                }
-                return null;
-            });
-
         Field<ListGraphType<EducationType>>("educations")
             .Description("Gets all education records")
             .ResolveAsync(async context =>

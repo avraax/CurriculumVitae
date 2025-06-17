@@ -1,14 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CurriculumVitae.Models;
 
 public class Skill
 {
     public int Id { get; set; }
-
-    [Required]
-    public int PersonId { get; set; }
 
     [Required]
     [MaxLength(100)]
@@ -25,9 +21,6 @@ public class Skill
 
     [MaxLength(500)]
     public string? Description { get; set; }
-
-    [ForeignKey(nameof(PersonId))]
-    public Person? Person { get; set; }
 }
 
 public enum SkillCategory

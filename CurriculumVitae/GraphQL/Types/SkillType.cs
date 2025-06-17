@@ -13,9 +13,6 @@ public class SkillType : ObjectGraphType<Skill>
         Field(s => s.Id, type: typeof(NonNullGraphType<IntGraphType>))
             .Description("The unique identifier for the skill");
             
-        Field(s => s.PersonId, type: typeof(NonNullGraphType<IntGraphType>))
-            .Description("The ID of the person this skill belongs to");
-            
         Field(s => s.Name, type: typeof(NonNullGraphType<StringGraphType>))
             .Description("The name of the skill");
             

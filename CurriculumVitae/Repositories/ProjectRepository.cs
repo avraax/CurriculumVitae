@@ -58,15 +58,14 @@ public class ProjectRepository : IProjectRepository
         return new Project
         {
             Id = reader.GetInt32(0),
-            PersonId = reader.GetInt32(1),
-            Name = reader.GetString(2),
-            Description = reader.GetString(3),
-            Technologies = reader.IsDBNull(4) ? null : reader.GetString(4),
-            StartDate = DateTime.Parse(reader.GetString(5)),
-            EndDate = reader.IsDBNull(6) ? null : DateTime.Parse(reader.GetString(6)),
-            ProjectUrl = reader.IsDBNull(7) ? null : reader.GetString(7),
-            SourceCodeUrl = reader.IsDBNull(8) ? null : reader.GetString(8),
-            IsFeatured = reader.GetInt32(9) == 1
+            Name = reader.GetString(1),
+            Description = reader.GetString(2),
+            Technologies = reader.IsDBNull(3) ? null : reader.GetString(3),
+            StartDate = DateTime.Parse(reader.GetString(4)),
+            EndDate = reader.IsDBNull(5) ? null : DateTime.Parse(reader.GetString(5)),
+            ProjectUrl = reader.IsDBNull(6) ? null : reader.GetString(6),
+            SourceCodeUrl = reader.IsDBNull(7) ? null : reader.GetString(7),
+            IsFeatured = reader.GetInt32(8) == 1
         };
     }
 } 
